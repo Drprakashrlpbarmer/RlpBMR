@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>एडमिन पैनल | RLP बाड़मेर</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js"></script>
+<style>
+    body { font-family: Arial,sans-serif; padding:20px; background:#f8f9fa; }
+    .hidden { display:none; }
+    .section { background:#fff; padding:1rem; margin:1rem 0; border-radius:8px; }
+    input,textarea { width:100%; padding:0.5rem; margin:0.5rem 0; }
+    button { padding:0.5rem 1rem; background:#007bff; color:#fff; border:none; cursor:pointer; }
+    h2 { color:#333; }
+</style>
+</head>
+<body>
+
+<h1>एडमिन लॉगिन</h1>
+<div id="login-form">
+    <input id="email" type="email" placeholder="ईमेल">
+    <input id="password" type="password" placeholder="पासवर्ड">
+    <button onclick="doLogin()">लॉगिन</button>
+</div>
+
+<div id="dashboard" class="hidden">
+
+    <h1>एडमिन डैशबोर्ड</h1>
+
+    <div class="section">
+        <h2>नया नेता जोड़ें</h2>
+        <input id="leaderName" placeholder="नाम">
+        <textarea id="leaderBio" placeholder="बायोडाटा"></textarea>
+        <input id="leaderImg" type="file">
+        <button onclick="addLeader()">सेव करें</button>
+    </div>
+
+    <div class="section">
+        <h2>गैलरी इमेज जोड़ें</h2>
+        <input id="galleryImg" type="file">
+        <button onclick="addGalleryImage()">सेव करें</button>
+    </div>
+
+    <div class="section">
+        <h2>नया वीडियो लिंक जोड़ें</h2>
+        <input id="videoLink" placeholder="YouTube लिंक">
+        <button onclick="addVideo()">सेव करें</button>
+    </div>
+
+    <div class="section">
+        <h2>नया समाचार जोड़ें</h2>
+        <input id="newsTitle" placeholder="शीर्षक">
+        <textarea id="newsContent" placeholder="विवरण"></textarea>
+        <button onclick="addNews()">सेव करें</button>
+    </div>
+
+    <div class="section">
+        <h2>कमेंट्स देखें</h2>
+        <div id="commentsList">लोड हो रहा है...</div>
+    </div>
+
+    <div class="section">
+        <h2>सदस्यता देखें</h2>
+        <div id="subscriptionsList">लोड हो रहा है...</div>
+    </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyApFNHvNIzFGRU-17x38QzzRQiLEH1ZuHY",
+  authDomain: "rlp-barmer.firebaseapp.com",
+  projectId: "rlp-barmer",
+  storageBucket: "rlp-barmer.appspot.com",
+  messagingSenderId: "102541179271",
+  appId: "1:102541179271:web:ec86fec899bda1ec4e7b22"
+};
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+auth.onAuthStateChanged(user => {
+    if(user){
+        document.getElementById('dashboard').classList.remove('hidden');
+        document.getElementById('login-form').classList.add('hidden');
+        loadComments();
+        loadSubscriptions();
+    } else {
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+    }
+});
+
+function doLogin(){
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, pass).catch(e=>alert(e.message));
+}
+
+async function addLeader() {
+    const name = leaderName.value;
+    const bio = leaderBio.value;
+    const file = leaderImg.files[0];
+    if(!file) return alert('इमेज चुनें');
+    const imgRef = storage.ref('leaders/' + file.name);
+    await imgRef.put(file);
+    const imgURL = await imgRef.getDownloadURL();
+    await db.collection('leaders').add({ name, bio, imgURL });
+    alert('सेव हो गया ✅');
+}
+
+async function addGalleryImage() {
+    const file = galleryImg.files[0];
+    if(!file) return alert('इमेज चुनें');
+    const imgRef = storage.ref('gallery/' + file.name);
+    await imgRef.put(file);
+    await imgRef.getDownloadURL();
+    alert('गैलरी इमेज सेव हो गया ✅');
+}
+
+async function addVideo() {
+    const link = videoLink.value;
+    await db.collection('videos').add({ link, createdAt:new Date() });
+    alert('वीडियो सेव हो गया ✅');
+}
+
+async function addNews() {
+    await db.collection('news').add({ 
+      title: newsTitle.value, content: newsContent.value, createdAt:new Date() 
+    });
+    alert('समाचार सेव हो गया ✅');
+}
+
+async function loadComments(){
+    const list = commentsList;
+    list.innerHTML = '';
+    const snapshot = await db.collection('comments').orderBy('createdAt','desc').get();
+    snapshot.forEach(doc=>{
+        const d = doc.data();
+        const div = document.createElement('div');
+        div.innerHTML = `<p><b>${d.name}</b>: ${d.message}</p><button onclick="deleteComment('${doc.id}')">डिलीट</button><hr>`;
+        list.appendChild(div);
+    });
+}
+async function deleteComment(id){
+    await db.collection('comments').doc(id).delete();
+    loadComments();
+}
+async function loadSubscriptions(){
+    const list = subscriptionsList;
+    list.innerHTML = '';
+    const snapshot = await db.collection('subscriptions').get();
+    snapshot.forEach(doc=>{
+        const d = doc.data();
+        list.innerHTML += `<p>${d.name} (${d.email}), ${d.phone}</p><hr>`;
+    });
+}
+</script>
+
+</body>
+</html>
