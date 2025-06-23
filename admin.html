@@ -113,27 +113,37 @@ async function addLeader() {
     const imgURL = await imgRef.getDownloadURL();
     await db.collection('leaders').add({ name, bio, imgURL });
     alert('सेव हो गया ✅');
+    document.getElementById('leaderName').value = '';
+    document.getElementById('leaderBio').value = '';
+    document.getElementById('leaderImg').value = '';
 }
 
 async function addGalleryImage() {
-    const file = document.getElementById('galleryImg').files[0];
+    const fileInput = document.getElementById('galleryImg');
+    const file = fileInput.files[0];
     if(!file) return alert('इमेज चुनें');
     const imgRef = storage.ref('gallery/' + file.name);
     await imgRef.put(file);
     alert('गैलरी इमेज सेव हो गया ✅');
+    fileInput.value = '';
 }
 
 async function addVideo() {
     const link = document.getElementById('videoLink').value;
+    if(!link) return alert('वीडियो लिंक दर्ज करें');
     await db.collection('videos').add({ link, createdAt:new Date() });
     alert('वीडियो सेव हो गया ✅');
+    document.getElementById('videoLink').value = '';
 }
 
 async function addNews() {
     const title = document.getElementById('newsTitle').value;
     const content = document.getElementById('newsContent').value;
+    if(!title || !content) return alert('शीर्षक और कंटेंट भरें');
     await db.collection('news').add({ title, content, createdAt:new Date() });
     alert('समाचार सेव हो गया ✅');
+    document.getElementById('newsTitle').value = '';
+    document.getElementById('newsContent').value = '';
 }
 
 async function loadComments(){
