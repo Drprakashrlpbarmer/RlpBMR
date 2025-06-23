@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>एडमिन पैनल | RLP बाड़मेर</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js"></script>
+<!-- Firebase v8.x Scripts -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 <style>
     body { font-family: Arial,sans-serif; padding:20px; background:#f8f9fa; }
     .hidden { display:none; }
@@ -98,14 +99,15 @@ auth.onAuthStateChanged(user => {
 function doLogin(){
     const email = document.getElementById('email').value;
     const pass = document.getElementById('password').value;
-    auth.signInWithEmailAndPassword(email, pass).catch(e=>alert(e.message));
+    auth.signInWithEmailAndPassword(email, pass).catch(e => alert(e.message));
 }
 
 async function addLeader() {
-    const name = leaderName.value;
-    const bio = leaderBio.value;
-    const file = leaderImg.files[0];
+    const name = document.getElementById('leaderName').value;
+    const bio = document.getElementById('leaderBio').value;
+    const file = document.getElementById('leaderImg').files[0];
     if(!file) return alert('इमेज चुनें');
+
     const imgRef = storage.ref('leaders/' + file.name);
     await imgRef.put(file);
     const imgURL = await imgRef.getDownloadURL();
@@ -114,29 +116,28 @@ async function addLeader() {
 }
 
 async function addGalleryImage() {
-    const file = galleryImg.files[0];
+    const file = document.getElementById('galleryImg').files[0];
     if(!file) return alert('इमेज चुनें');
     const imgRef = storage.ref('gallery/' + file.name);
     await imgRef.put(file);
-    await imgRef.getDownloadURL();
     alert('गैलरी इमेज सेव हो गया ✅');
 }
 
 async function addVideo() {
-    const link = videoLink.value;
+    const link = document.getElementById('videoLink').value;
     await db.collection('videos').add({ link, createdAt:new Date() });
     alert('वीडियो सेव हो गया ✅');
 }
 
 async function addNews() {
-    await db.collection('news').add({ 
-      title: newsTitle.value, content: newsContent.value, createdAt:new Date() 
-    });
+    const title = document.getElementById('newsTitle').value;
+    const content = document.getElementById('newsContent').value;
+    await db.collection('news').add({ title, content, createdAt:new Date() });
     alert('समाचार सेव हो गया ✅');
 }
 
 async function loadComments(){
-    const list = commentsList;
+    const list = document.getElementById('commentsList');
     list.innerHTML = '';
     const snapshot = await db.collection('comments').orderBy('createdAt','desc').get();
     snapshot.forEach(doc=>{
@@ -146,12 +147,14 @@ async function loadComments(){
         list.appendChild(div);
     });
 }
+
 async function deleteComment(id){
     await db.collection('comments').doc(id).delete();
     loadComments();
 }
+
 async function loadSubscriptions(){
-    const list = subscriptionsList;
+    const list = document.getElementById('subscriptionsList');
     list.innerHTML = '';
     const snapshot = await db.collection('subscriptions').get();
     snapshot.forEach(doc=>{
@@ -160,6 +163,5 @@ async function loadSubscriptions(){
     });
 }
 </script>
-
 </body>
 </html>
